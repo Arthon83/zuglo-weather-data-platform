@@ -1,0 +1,65 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+.ipynb_checkpoints
+.virtual_documents
+.pytest_cache
+
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.ipynb
+
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# =========================
+# Environment variables
+# =========================
+.env
+.env.*
+*.pem
+*.key
+
+# =========================
+# Airflow
+# =========================
+logs/
+airflow/logs/
+airflow.db
+*.db
+
+# =========================
+# dbt
+# =========================
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+profiles.yml
+
+# =========================
+# Docker
+# =========================
+*.log
+docker-compose.override.yml
+docker-compose_old
+
+# =========================
+# IDE
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+doc.docx
+doc2.docx
+info.txt

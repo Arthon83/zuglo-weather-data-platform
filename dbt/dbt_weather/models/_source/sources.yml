@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: weather_raw
+    catalog: weather
+    schema: silver
+    tables:
+      - name: zuglo_data
+        description: "Órás időjárás adatok Open-Meteo API-ról."

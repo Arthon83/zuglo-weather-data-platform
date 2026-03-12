@@ -1,0 +1,24 @@
+services:
+  airflow:
+    image: apache/airflow:2.9.3
+    container_name: weather_airflow
+    ports:
+      - "8081:8080"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+      AIRFLOW__CORE__FERNET_KEY: ""
+      AIRFLOW__WEBSERVER__SECRET_KEY: "secret"
+      _AIRFLOW_DB_MIGRATE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
+      _AIRFLOW_WWW_USER_USERNAME: airflow
+      _AIRFLOW_WWW_USER_PASSWORD: airflow
+      _PIP_ADDITIONAL_REQUIREMENTS: > 
+           databricks-sql-connector
+           dbt-databricks==1.7.6
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ../dbt:/opt/airflow/dbt
+      - ../ingest:/opt/airflow/ingest
+    command: standalone

@@ -1,0 +1,11 @@
+dbt_weather:
+  outputs:
+    dev:
+      catalog: ***
+      host: ***
+      http_path: ***
+      schema: gold
+      threads: 4
+      token: ***
+      type: databricks
+  target: dev
