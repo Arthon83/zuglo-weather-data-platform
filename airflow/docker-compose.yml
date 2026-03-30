@@ -36,12 +36,13 @@ services:
       _PIP_ADDITIONAL_REQUIREMENTS: >
         databricks-sql-connector
         dbt-databricks==1.7.6
+        astronomer-cosmos
         python-dotenv
         psycopg2-binary
 
     volumes:
       - ./dags:/opt/airflow/dags
-      - ../dbt:/opt/airflow/dbt
+      - ../dbt_weather:/opt/airflow/dbt_weather
       - ../ingest:/opt/airflow/ingest
 
 
