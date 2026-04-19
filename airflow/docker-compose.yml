@@ -51,6 +51,17 @@ services:
         condition: service_healthy
 
     command: standalone
+  
+  streamlit:
+    build: ../streamlit
+    container_name: weather_streamlit
+    env_file:
+      - .env
+    ports:
+      - "8501:8501"
+    restart: unless-stopped
 
 volumes:
   airflow_postgres_data:
+
+  
