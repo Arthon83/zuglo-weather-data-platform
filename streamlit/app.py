@@ -1,7 +1,7 @@
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-import streamlit.components.v1 as components
+import streamlit as st # type: ignore
+import pandas as pd # type: ignore
+import plotly.express as px # type: ignore
+import streamlit.components.v1 as components # type: ignore
 
 from datetime import datetime as dt, timedelta
 
@@ -158,12 +158,21 @@ def compare_chart(df_clean: pd.DataFrame, weather_dict: dict):
             "variable": "Időszak",
         },
     )
-
+    
     fig.update_layout(
-        height=320,
-        margin=dict(l=40, r=20, t=50, b=40),
+        height = 320,
+        margin = dict(l=40, r=20, t=50, b=40),
         legend_title_text="Időszak",
+        legend = dict(
+            orientation = "h",
+            yanchor = "bottom",
+            y = -0.6,
+            xanchor = "center",
+            x = 0.5
+        )
     )
+
+    
 
     fig.data[0].name = "5 nap átlaga"
     fig.data[1].name = weather_dict["value"]
@@ -223,6 +232,7 @@ def histogram_chart(df_clean: pd.DataFrame, params: dict, current_hour) -> px.hi
             params["attribute"]: f"{params['value']} ({params['measure']})",
         },
     )
+    
 
     fig.update_layout(
         height=320,
@@ -271,11 +281,19 @@ def daynight_chart(df_clean: pd.DataFrame, params: dict) -> px.line:
             "variable": "Időszak",
         },
     )
+    
 
     fig.update_layout(
         height=360,
         margin=dict(l=40, r=20, t=50, b=40),
         legend_title_text="Időszak",
+        legend = dict(
+            orientation = "h",
+            yanchor = "bottom",
+            y = -0.6,
+            xanchor = "center",
+            x = 0.5
+        )
     )
 
     fig.data[0].name = "Nappal"
@@ -305,15 +323,18 @@ def render_tab(df_clean: pd.DataFrame, params: dict) -> None:
     compare_fig = compare_chart(df_clean, params)
     hist_fig = histogram_chart(df_clean, params, current_hour)
 
-    st.plotly_chart(top_fig, use_container_width=True)
+    
+
+    st.plotly_chart(top_fig, use_container_width=True, config={"displayModeBar": False})
 
     col_left, col_right = st.columns([3, 2])
 
     with col_left:
-        st.plotly_chart(compare_fig, use_container_width=True)
+        st.plotly_chart(compare_fig, use_container_width=True, config={"displayModeBar": False})
 
     with col_right:
-        st.plotly_chart(hist_fig, use_container_width=True)
+        st.plotly_chart(hist_fig, use_container_width=True, config={"displayModeBar": False})
+
 
 
 def main():
@@ -323,6 +344,7 @@ def main():
         "A nézet az utolsó ismert mérésre, valamint a hőmérséklet, páratartalom és légnyomás "
         "összehasonlító grafikonjaira épül."
     )
+    
 
     try:
         df_clean = load_data()
