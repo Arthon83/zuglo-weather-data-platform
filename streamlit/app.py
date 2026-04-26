@@ -180,7 +180,7 @@ def compare_chart(df_clean: pd.DataFrame, weather_dict: dict):
 
     fig.data[0].line = dict(color="gray", dash="dash", width=1)
     fig.data[1].line = dict(color="red", width=2)
-    fig.data[2].line = dict(color="black", width=1)
+    fig.data[2].line = dict(color="gray", width=1)
 
     unit = weather_dict["measure"]
     value_name = weather_dict["value"]
@@ -325,15 +325,15 @@ def render_tab(df_clean: pd.DataFrame, params: dict) -> None:
 
     
 
-    st.plotly_chart(top_fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(top_fig, use_container_width=True, config={"displayModeBar": False, "staticPlot": True})
 
     col_left, col_right = st.columns([3, 2])
 
     with col_left:
-        st.plotly_chart(compare_fig, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(compare_fig, use_container_width=True, config={"displayModeBar": False, "staticPlot": True})
 
     with col_right:
-        st.plotly_chart(hist_fig, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(hist_fig, use_container_width=True, config={"displayModeBar": False, "staticPlot": True})
 
 
 
@@ -359,7 +359,7 @@ def main():
 
         st.caption(f"Utolsó ismert rekord: {last_record_str} (magyar idő)")
 
-        kpi_col1, kpi_col2, kpi_col3 = st.columns(3)
+        kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
 
         with kpi_col1:
             st.metric(
@@ -377,6 +377,12 @@ def main():
             st.metric(
                 "Légnyomás",
                 f"{last_row['pressure_hpa']:.0f} hPa" if pd.notna(last_row["pressure_hpa"]) else "N/A"
+            )
+
+        with kpi_col4:
+            st.metric(
+                "Szélsebesség",
+                f"{last_row['wind_speed_kmh']:.0f} km/h" if pd.notna(last_row["wind_speed_kmh"]) else "N/A"
             )
 
         tab1, tab2, tab3 = st.tabs(["Hőmérséklet", "Páratartalom", "Légnyomás"])
