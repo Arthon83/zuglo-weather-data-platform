@@ -39,3 +39,59 @@ def clean(silver):
     
     silver = silver[['event_time_hu', 'date','time','month','week','day','hour','temperature_c', 'humidity_pct','pressure_hpa','wind_speed_kmh','rain_mm','cloudcover_pct','sunrise','sunset']].reset_index(drop=True)
     return silver
+
+def load_data() -> pd.DataFrame:
+    df = get_silver_zuglo()
+    df_clean = clean(df).copy()
+    df_clean = df_clean[df_clean["date"] > pd.Timestamp("2026-03-15").date()]
+
+    df_clean["date"] = pd.to_datetime(df_clean["date"]).dt.date
+    
+
+    # Biztonsági konverziók
+    if "event_time_hu" in df_clean.columns:
+        df_clean["event_time_hu"] = pd.to_datetime(df_clean["event_time_hu"], errors="coerce")
+
+    if "event_time_utc" in df_clean.columns:
+        df_clean["event_time_utc"] = pd.to_datetime(df_clean["event_time_utc"], errors="coerce")
+
+    if "sunrise" in df_clean.columns:
+        df_clean["sunrise"] = pd.to_datetime(df_clean["sunrise"], errors="coerce")
+
+    if "sunset" in df_clean.columns:
+        df_clean["sunset"] = pd.to_datetime(df_clean["sunset"], errors="coerce")
+
+    # Nappal / éjszaka logika
+    if all(col in df_clean.columns for col in ["event_time_hu", "sunrise", "sunset"]):
+        df_clean["is_day"] = (
+            (df_clean["event_time_hu"] >= df_clean["sunrise"]) &
+            (df_clean["event_time_hu"] < df_clean["sunset"])
+        )
+    else:
+        df_clean["is_day"] = False
+
+    return df_clean
+
+def get_time_column(df: pd.DataFrame) -> str:
+    if "event_time_hu" in df.columns and df["event_time_hu"].notna().any():
+        return "event_time_hu"
+    if "event_time_utc" in df.columns and df["event_time_utc"].notna().any():
+        return "event_time_utc"
+    raise ValueError("Nincs használható időbélyeg oszlop.")
+
+
+def get_last_record(df: pd.DataFrame) -> pd.Series:
+    time_col = get_time_column(df)
+    valid = df[df[time_col].notna()].sort_values(time_col)
+    if valid.empty:
+        raise ValueError("Nincs megjeleníthető rekord.")
+    return valid.iloc[-1]
+
+
+def format_last_record_time(last_row: pd.Series, time_col: str) -> str:
+    ts = pd.to_datetime(last_row[time_col], errors="coerce")
+    if pd.isna(ts):
+        return "N/A"
+    return ts.strftime("%Y-%m-%d %H:%M")
+
+

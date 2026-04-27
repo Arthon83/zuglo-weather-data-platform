@@ -52,60 +52,7 @@ PARAMS = {
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def load_data() -> pd.DataFrame:
-    df = util.get_silver_zuglo()
-    df_clean = util.clean(df).copy()
-    df_clean = df_clean[df_clean["date"] > pd.Timestamp("2026-03-15").date()]
 
-    df_clean["date"] = pd.to_datetime(df_clean["date"]).dt.date
-    
-
-    # Biztonsági konverziók
-    if "event_time_hu" in df_clean.columns:
-        df_clean["event_time_hu"] = pd.to_datetime(df_clean["event_time_hu"], errors="coerce")
-
-    if "event_time_utc" in df_clean.columns:
-        df_clean["event_time_utc"] = pd.to_datetime(df_clean["event_time_utc"], errors="coerce")
-
-    if "sunrise" in df_clean.columns:
-        df_clean["sunrise"] = pd.to_datetime(df_clean["sunrise"], errors="coerce")
-
-    if "sunset" in df_clean.columns:
-        df_clean["sunset"] = pd.to_datetime(df_clean["sunset"], errors="coerce")
-
-    # Nappal / éjszaka logika
-    if all(col in df_clean.columns for col in ["event_time_hu", "sunrise", "sunset"]):
-        df_clean["is_day"] = (
-            (df_clean["event_time_hu"] >= df_clean["sunrise"]) &
-            (df_clean["event_time_hu"] < df_clean["sunset"])
-        )
-    else:
-        df_clean["is_day"] = False
-
-    return df_clean
-
-
-def get_time_column(df: pd.DataFrame) -> str:
-    if "event_time_hu" in df.columns and df["event_time_hu"].notna().any():
-        return "event_time_hu"
-    if "event_time_utc" in df.columns and df["event_time_utc"].notna().any():
-        return "event_time_utc"
-    raise ValueError("Nincs használható időbélyeg oszlop.")
-
-
-def get_last_record(df: pd.DataFrame) -> pd.Series:
-    time_col = get_time_column(df)
-    valid = df[df[time_col].notna()].sort_values(time_col)
-    if valid.empty:
-        raise ValueError("Nincs megjeleníthető rekord.")
-    return valid.iloc[-1]
-
-
-def format_last_record_time(last_row: pd.Series, time_col: str) -> str:
-    ts = pd.to_datetime(last_row[time_col], errors="coerce")
-    if pd.isna(ts):
-        return "N/A"
-    return ts.strftime("%Y-%m-%d %H:%M")
 
 
 def compare_chart(df_clean: pd.DataFrame, weather_dict: dict):
@@ -315,6 +262,24 @@ def daynight_chart(df_clean: pd.DataFrame, params: dict) -> px.line:
 
     return fig
 
+def last_rainy_day(df_clean):
+    rain_df = (
+        df_clean.groupby('date')['rain_mm']
+        .sum()
+        .reset_index()
+        .sort_values('date')
+    )
+
+    today = dt.today().date()
+
+    rainy_days = rain_df[rain_df['rain_mm'] > 3]
+
+    if rainy_days.empty:
+        return None
+
+    last_rain = rainy_days.iloc[-1]['date']
+    return (today - last_rain).days
+
 
 def render_tab(df_clean: pd.DataFrame, params: dict) -> None:
     current_hour = pd.Timestamp.now().floor("h").time()
@@ -335,6 +300,32 @@ def render_tab(df_clean: pd.DataFrame, params: dict) -> None:
     with col_right:
         st.plotly_chart(hist_fig, use_container_width=True, config={"displayModeBar": False, "staticPlot": True})
 
+def rain_chart(df_clean):
+    last_rain_day=last_rainy_day(df_clean)
+    if last_rain_day is None:
+        st.metric("Utolsó esős nap", "N/A")
+    else:
+        st.markdown(
+        f"""
+        <div style="padding:10px 0;">
+            <div style="font-size:14px; color:#6b7280; margin-bottom:5px;">
+                Utolsó esős nap
+            </div>
+            <div style="display:flex; align-items:baseline; gap:12px;">
+                <span style="font-size:72px; font-weight:800; color:#111;">
+                    {last_rain_day}
+                </span>
+                <span style="font-size:22px; color:#333;">
+                    napja nem esett 3 mm-t meghaladó eső
+                </span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+        )
+
+
+
 
 
 def main():
@@ -347,15 +338,15 @@ def main():
     
 
     try:
-        df_clean = load_data()
+        df_clean = util.load_data()
 
         if df_clean.empty:
             st.warning("Nincs megjeleníthető adat.")
             return
 
-        time_col = get_time_column(df_clean)
-        last_row = get_last_record(df_clean)
-        last_record_str = format_last_record_time(last_row, time_col)
+        time_col = util.get_time_column(df_clean)
+        last_row = util.get_last_record(df_clean)
+        last_record_str = util.format_last_record_time(last_row, time_col)
 
         st.caption(f"Utolsó ismert rekord: {last_record_str} (magyar idő)")
 
@@ -385,7 +376,7 @@ def main():
                 f"{last_row['wind_speed_kmh']:.0f} km/h" if pd.notna(last_row["wind_speed_kmh"]) else "N/A"
             )
 
-        tab1, tab2, tab3 = st.tabs(["Hőmérséklet", "Páratartalom", "Légnyomás"])
+        tab1, tab2, tab3, tab4 = st.tabs(["Hőmérséklet", "Páratartalom", "Légnyomás","Csapadék"])
 
         with tab1:
             render_tab(df_clean, PARAMS["temperature_c"])
@@ -395,6 +386,9 @@ def main():
 
         with tab3:
             render_tab(df_clean, PARAMS["pressure_hpa"])
+
+        with tab4:
+            rain_chart(df_clean)
 
     except Exception as e:
         st.error(f"Hiba történt a dashboard betöltése közben: {e}")
